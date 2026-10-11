@@ -1,0 +1,49 @@
+# Light control UI for balconylights.yaml
+#
+# Add these blocks to balconylights.yaml (homeassistant_configs). The IDs below (oled_display,
+# button1-4, light1, balcony_strip, preset_1_select, preset_2_select) are the ones that file
+# already defines.
+#
+# Then in balconylights.yaml:
+#   - Remove the display's `lambda:`. The component draws the screen itself; any lambda is
+#     replaced at boot.
+#   - Optionally remove `on_state: - component.update: oled_display` from button1-4. The
+#     component redraws after each press, so those are no longer needed (they're harmless).
+#
+# Tested with ESPHome 2026.9.1 (esp-idf, ESP32-S3).
+
+external_components:
+  - source: github://simonmetcalfe/esphome-ws2812b-hbridge-light-control@main
+    components: [light_control_ui]
+  - source: github://simonmetcalfe/oled-lcd-icons@main
+    components: [oli_icons]
+
+# Public-domain X11 bitmap fonts, drawn at their native size (see fonts/README.md)
+font:
+  - file:
+      type: web
+      url: https://raw.githubusercontent.com/simonmetcalfe/esphome-ws2812b-hbridge-light-control/main/fonts/5x7.bdf
+    id: ui_font_small
+  - file:
+      type: web
+      url: https://raw.githubusercontent.com/simonmetcalfe/esphome-ws2812b-hbridge-light-control/main/fonts/6x13B.bdf
+    id: ui_font_large
+
+light_control_ui:
+  display_id: oled_display
+  font_small: ui_font_small
+  font_large: ui_font_large
+  # B1 top-left, B2 bottom-left, B3 bottom-right, B4 top-right
+  buttons: [button1, button2, button3, button4]
+  # submenu_timeout: 30s   # return to the home screen after this long without a press
+  lights:
+    # Listed in this order on the home screen, after "All lights"
+    - type: hbridge
+      light_id: light1
+    - type: ws2812b
+      light_id: balcony_strip
+      colour1_select: preset_1_select
+      colour2_select: preset_2_select
+      # Defaults, shown for reference:
+      # dual_colour_effect: "Dual Colour"   # the effect that 2 COLOUR mode uses
+      # hidden_effects: ["Warm White"]      # effects shown as 1 COLOUR, not in the effect list
