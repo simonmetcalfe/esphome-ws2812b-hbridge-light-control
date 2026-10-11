@@ -226,7 +226,9 @@ void LightControlUi::setup() {
     });
   }
 
+  // ESPHome only auto-clears a display that has a lambda or pages, so clear each frame here.
   this->display_->set_writer([this](display::Display &it) {
+    it.clear();
     DisplayCanvas canvas(it, this->font_small_, this->font_large_);
     this->ui_.render(canvas);
   });
