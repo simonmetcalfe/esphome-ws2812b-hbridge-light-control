@@ -3,8 +3,8 @@
  * UI TEST FIRMWARE
  *
  * The light control UI on the real OLED and buttons, with fake lights in RAM (no Wi-Fi, no ESPHome),
- * for quick UI iteration. The lights mirror balconylights.yaml: Fairy lights (H-bridge, 4 effects)
- * and Wall lights (WS2812B, 10 effects, 12 colours). Every change is logged to the USB serial port.
+ * for quick UI iteration. The lights mirror balconylights.yaml: Fairy (H-bridge, 4 effects) and
+ * Wall RGB (WS2812B, 10 effects, 12 colours). Every change is logged to the USB serial port.
  *
  * Flash over the ESP32-S3's native USB port: GPIO43/44 (the UART0 pins) are buttons B1/B2.
  * -------------------------------------------------------------------------------------------------
@@ -59,18 +59,18 @@ class U8g2Canvas : public lcui::Canvas {
 
  private:
   static const uint8_t *font_(lcui::Font font) {
-    return font == lcui::Font::LARGE ? u8g2_font_6x13B_tr : u8g2_font_5x7_tr;
+    return font == lcui::Font::LARGE ? u8g2_font_helvB10_tr : u8g2_font_helvR08_tr;
   }
 };
 
 const char *const FAIRY_EFFECTS[] = {"Fade", "Breathe", "Smooth Random", "Twinkle"};
-const char *const WALL_EFFECTS[] = {"Rainbow 360", "Rainbow Horizontal", "Aurora Blue", "Aurora Purple",
+const char *const WALL_EFFECTS[] = {"Rainbow 360", "Rainbow 180", "Aurora Blue", "Aurora Purple",
                                     "Aurora Multi", "Sunset", "Sunrise", "Lava", "Forest", "Candlelight"};
-const char *const WALL_COLOURS[] = {"Warm White", "Yellow", "Orange", "Red", "Pink", "Purple",
-                                    "Blue", "Cyan", "Aquamarine", "Green", "Cool White", "Neutral White"};
+const char *const WALL_COLOURS[] = {"Warm W.", "Yellow", "Orange", "Red", "Pink", "Purple",
+                                    "Blue", "Cyan", "Aqua", "Green", "Cool W.", "Neutral W."};
 
-lcui::FakeLight fairy_lights("Fairy lights", FAIRY_EFFECTS, 4);
-lcui::FakeLight wall_lights("Wall lights", WALL_EFFECTS, 10, WALL_COLOURS, 12);
+lcui::FakeLight fairy_lights("Fairy", FAIRY_EFFECTS, 4);
+lcui::FakeLight wall_lights("Wall RGB", WALL_EFFECTS, 10, WALL_COLOURS, 12);
 
 lcui::Ui ui;
 U8g2Canvas canvas;

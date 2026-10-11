@@ -76,10 +76,18 @@ uint8_t LightPortBase::brightness() const {
   return (uint8_t) lroundf(this->light_->remote_values.get_brightness() * 100.0f);
 }
 
-/** Changes brightness without turning the light on or off. */
+/**
+ * As Home Assistant sends it: brightness alone while on, turn on with brightness while off, and turn
+ * off for 0. (A brightness of 0 would also turn the light off, but ESPHome then resets it to 100 %.)
+ */
 void LightPortBase::set_brightness(uint8_t percent) {
   auto call = this->light_->make_call();
-  call.set_brightness(percent / 100.0f);
+  if (percent == 0) {
+    call.set_state(false);
+  } else {
+    if (!this->is_on()) call.set_state(true);
+    call.set_brightness(percent / 100.0f);
+  }
   call.perform();
 }
 

@@ -40,8 +40,9 @@ class LightPort {
   virtual bool is_on() const = 0;
   virtual void set_on(bool on) = 0;
 
-  /** Brightness 0-100 %. Kept while the light is off. */
+  /** Brightness 1-100 %. Kept while the light is off. */
   virtual uint8_t brightness() const = 0;
+  /** 1-100 %: set the brightness, turning the light on if it's off. 0: turn the light off, keeping its brightness. */
   virtual void set_brightness(uint8_t percent) = 0;
 
   virtual Mode mode() const = 0;

@@ -21,9 +21,11 @@ namespace lcui {
  *
  * Screens:
  *   HOME        B1 next light (All lights first when there are 2+ lights), B2 on/off,
- *               B3 brightness screen, B4 mode screen (single lights only)
- *   BRIGHTNESS  B1 back, B2 down, B3 up (hold to repeat). All lights start from the brightest
- *               light and are all set to the same value on the first change
+ *               B3 brightness screen, B4 mode screen (single lights only). B3 and B4 are hidden
+ *               and do nothing while the light (or every light) is off
+ *   BRIGHTNESS  B1 back, B2 down, B3 up (hold to repeat), in 10 % steps; 0 turns the light off.
+ *               All lights start from the brightest light that's on, and the lights that are on
+ *               are all set to the same value on the first change
  *   MODE        B1 back, B4 next mode, B2/B3 depend on the mode:
  *                 COLOUR       previous / next colour
  *                 DUAL_COLOUR  next colour 1 / next colour 2

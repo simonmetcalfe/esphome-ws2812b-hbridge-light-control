@@ -15,9 +15,10 @@ namespace ic = oli::icons_12x12;
  * -------------------------------------------------------------------------------------------------
  * LAYOUT
  *
- * 128x64, tuned for 12x12 icons (glyph area 11x11, column 11 and row 11 blank) with LARGE = 6x13B
- * and SMALL = 5x7. Both fonts leave a blank column on the right of each glyph, so right-aligned
- * text is anchored one column further right than the icons. Everything keeps 2 px from the edge.
+ * 128x64, tuned for 12x12 icons (glyph area 11x11, column 11 and row 11 blank) with LARGE = helvB10
+ * (11 px capitals) and SMALL = helvR08 (8 px capitals). Both fonts are proportional and most glyphs
+ * leave a blank column on their right, so right-aligned text is anchored one column further right
+ * than the icons. Everything keeps 2 px from the edge.
  * -------------------------------------------------------------------------------------------------
  */
 
@@ -26,20 +27,17 @@ constexpr int ICON_RIGHT_X = 115;   // columns 115-125
 constexpr int ICON_CENTRE_X = 58;   // columns 58-68
 constexpr int ICON_TOP_Y = 1;       // rows 1-11
 constexpr int ICON_BOTTOM_Y = 51;   // rows 51-61
-constexpr int ICON_CENTRE_Y = 25;   // rows 25-35
+constexpr int ICON_CENTRE_Y = 26;   // rows 26-36
 
 constexpr int TEXT_LEFT_X = 2;
 constexpr int TEXT_RIGHT_X = 127;   // right-aligned text ends on column 125
 constexpr int TEXT_CENTRE_X = 64;
 constexpr int TITLE_X = 17;         // 4 px after the B1 icon
 
-constexpr int TITLE_BASELINE = 11;         // LARGE capitals on rows 2-10, level with the B1 icon
-constexpr int SUBTITLE_BASELINE = 20;      // SMALL capitals on rows 14-19
-constexpr int SUBTITLE2_BASELINE = 28;     // second line under the B4 icon (two colours)
-constexpr int BOTTOM_LABEL_BASELINE = 48;  // directly above the bottom icons
-constexpr int BOTTOM_LABEL2_BASELINE = 40; // the line above that
-constexpr int CENTRE_TEXT_BASELINE = 53;   // between the chevrons
-constexpr int CENTRE_TEXT2_BASELINE = 61;
+constexpr int TITLE_BASELINE = 12;         // LARGE capitals on rows 1-11, level with the B1 icon
+constexpr int SUBTITLE_BASELINE = 23;      // SMALL capitals on rows 15-22, under the B4 icon
+constexpr int BOTTOM_LABEL_BASELINE = 48;  // SMALL capitals on rows 40-47, above the bottom icons
+constexpr int CENTRE_TEXT_BASELINE = 60;   // rows 52-59, level with the chevrons
 
 constexpr int TITLE_MAX_W = ICON_RIGHT_X - 4 - TITLE_X;
 constexpr int GAP = 4;
@@ -56,7 +54,7 @@ constexpr uint32_t REPEAT_INTERVAL_MS = 150;
 
 constexpr size_t TEXT_MAX = 32;
 
-const char *const ALL_LIGHTS = "All lights";
+const char *const ALL_LIGHTS = "ALL LIGHTS";
 
 enum class Align : uint8_t { LEFT, CENTRE, RIGHT };
 
@@ -160,13 +158,8 @@ void cycle_effect(LightPort &light, int dir) {
   if (n > 0) light.set_effect((uint8_t) cycle(light.effect_index(), n, dir));
 }
 
-/** "3 / 12", or "- / 12" when the index isn't in the list. */
-void format_count(char *buf, size_t size, int index, int n) {
-  if (index < 0)
-    snprintf(buf, size, "- / %d", n);
-  else
-    snprintf(buf, size, "%d / %d", index + 1, n);
-}
+/** Brightness as the UI shows and steps it: 0 while the light is off. */
+int level(const LightPort &light) { return light.is_on() ? light.brightness() : 0; }
 
 const char *colour_label(const LightPort &light, uint8_t slot) {
   int i = light.colour_index(slot);
@@ -207,38 +200,39 @@ bool Ui::any_on() const {
   return false;
 }
 
-/** The selected light's brightness; for All lights, the brightest light's. */
+/** The selected light's brightness, 0 if it's off; for All lights, the brightest light's. */
 uint8_t Ui::brightness() const {
   LightPort *light = this->selected_light();
-  if (light != nullptr) return light->brightness();
-  uint8_t max = 0;
+  if (light != nullptr) return (uint8_t) level(*light);
+  int max = 0;
   for (uint8_t i = 0; i < this->light_count_; i++) {
-    uint8_t b = this->lights_[i]->brightness();
+    int b = level(*this->lights_[i]);
     if (b > max) max = b;
   }
-  return max;
+  return (uint8_t) max;
 }
 
 /**
- * Move to the next multiple of BRIGHTNESS_STEP up or down, between BRIGHTNESS_STEP and 100 %.
- * All lights are all set to the new value, so they match after the first press.
+ * Move to the next multiple of BRIGHTNESS_STEP up or down, between 0 (off) and 100 %. All lights:
+ * the lights that are on are all set to the new value, so they match after the first press; when
+ * none are on (stepped down to 0), up turns them all on.
  */
 void Ui::step_brightness(bool up) {
   int value = this->brightness();
-  int next;
-  if (up) {
-    next = (value / BRIGHTNESS_STEP + 1) * BRIGHTNESS_STEP;
-    if (next > 100) next = 100;
-  } else {
-    next = ((value + BRIGHTNESS_STEP - 1) / BRIGHTNESS_STEP - 1) * BRIGHTNESS_STEP;
-    if (next < BRIGHTNESS_STEP) next = value < BRIGHTNESS_STEP ? value : BRIGHTNESS_STEP;
-  }
+  int next = up ? (value / BRIGHTNESS_STEP + 1) * BRIGHTNESS_STEP
+                : ((value + BRIGHTNESS_STEP - 1) / BRIGHTNESS_STEP - 1) * BRIGHTNESS_STEP;
+  if (next > 100) next = 100;
+  if (next < 0) next = 0;
   LightPort *light = this->selected_light();
   if (light != nullptr) {
-    light->set_brightness((uint8_t) next);
+    if (level(*light) != next) light->set_brightness((uint8_t) next);
     return;
   }
-  for (uint8_t i = 0; i < this->light_count_; i++) this->lights_[i]->set_brightness((uint8_t) next);
+  bool any_on = this->any_on();
+  for (uint8_t i = 0; i < this->light_count_; i++) {
+    LightPort *l = this->lights_[i];
+    if ((l->is_on() || !any_on) && level(*l) != next) l->set_brightness((uint8_t) next);
+  }
 }
 
 /**
@@ -298,11 +292,13 @@ bool Ui::press_home(Button button) {
       }
       return true;
     }
+    // B3 and B4 do nothing (and aren't drawn) while the light, or every light, is off
     case Button::BOTTOM_RIGHT:
+      if (!this->any_on()) return false;
       this->screen_ = Screen::BRIGHTNESS;
       return true;
     case Button::TOP_RIGHT:
-      if (light == nullptr) return false;
+      if (light == nullptr || !light->is_on()) return false;
       this->screen_ = Screen::MODE;
       return true;
   }
@@ -381,42 +377,30 @@ void Ui::render(Canvas &canvas) const {
 
 void Ui::render_home(Canvas &c) const {
   LightPort *light = this->selected_light();
-  char buf[16];
+  const bool on = this->any_on();
 
   // B1: next light
   icon(c, ICON_LEFT_X, ICON_TOP_Y, ic::swapL);
   title(c, light != nullptr ? light->name() : ALL_LIGHTS);
-  snprintf(buf, sizeof(buf), "%d / %d", this->selected_ + 1, this->entry_count());
-  label(c, TITLE_X, SUBTITLE_BASELINE, buf, Align::LEFT);
-  int b4_max_w = TEXT_RIGHT_X - (TITLE_X + c.text_width(Font::SMALL, buf) + GAP);
 
   // B2: on/off
   icon(c, ICON_LEFT_X, ICON_BOTTOM_Y, ic::power);
-  label(c, TEXT_LEFT_X, BOTTOM_LABEL_BASELINE, this->any_on() ? "ON" : "OFF", Align::LEFT);
+  label(c, TEXT_LEFT_X, BOTTOM_LABEL_BASELINE, on ? "ON" : "OFF", Align::LEFT);
+
+  // B3 and B4 only while on
+  if (!on) return;
 
   // B3: brightness
+  char buf[8];
   icon(c, ICON_RIGHT_X, ICON_BOTTOM_Y, ic::brightness);
   snprintf(buf, sizeof(buf), "%d%%", this->brightness());
   label(c, TEXT_RIGHT_X, BOTTOM_LABEL_BASELINE, buf, Align::RIGHT);
 
-  // B4: mode (single lights only)
+  // B4: mode (single lights only); the mode screen shows the colour or effect
   if (light == nullptr) return;
   Mode mode = light->mode();
   icon(c, ICON_RIGHT_X, ICON_TOP_Y, mode_icon(mode));
-  if (mode == Mode::DUAL_COLOUR) {
-    label(c, TEXT_RIGHT_X, SUBTITLE_BASELINE, colour_label(*light, 0), Align::RIGHT, b4_max_w);
-    label(c, TEXT_RIGHT_X, SUBTITLE2_BASELINE, colour_label(*light, 1), Align::RIGHT, TEXT_RIGHT_X - TITLE_X);
-    return;
-  }
-  const char *text = mode == Mode::COLOUR   ? colour_label(*light, 0)
-                     : mode == Mode::EFFECT ? effect_label(*light)
-                                            : "STATIC";
-  // Beside the count if it fits, otherwise on the line below
-  if (label_width(c, text) <= b4_max_w) {
-    label(c, TEXT_RIGHT_X, SUBTITLE_BASELINE, text, Align::RIGHT);
-  } else {
-    label(c, TEXT_RIGHT_X, SUBTITLE2_BASELINE, text, Align::RIGHT, TEXT_RIGHT_X - TITLE_X);
-  }
+  label(c, TEXT_RIGHT_X, SUBTITLE_BASELINE, mode_label(mode), Align::RIGHT);
 }
 
 void Ui::render_brightness(Canvas &c) const {
@@ -439,7 +423,6 @@ void Ui::render_brightness(Canvas &c) const {
 void Ui::render_mode(Canvas &c) const {
   LightPort *light = this->selected_light();
   if (light == nullptr) return;
-  char buf[16];
 
   // B1: back
   icon(c, ICON_LEFT_X, ICON_TOP_Y, ic::arrowLeftLarge);
@@ -447,48 +430,38 @@ void Ui::render_mode(Canvas &c) const {
 
   // B4: next mode
   Mode mode = light->mode();
-  icon(c, ICON_RIGHT_X, ICON_TOP_Y, mode_icon(mode));
+  icon(c, ICON_RIGHT_X, ICON_TOP_Y, ic::swapL);
   label(c, TEXT_RIGHT_X, SUBTITLE_BASELINE, mode_label(mode), Align::RIGHT);
 
-  // Centre text fits between the chevrons
-  const int centre_max_w = (ICON_RIGHT_X - GAP) - (ICON_LEFT_X + ic::W + GAP);
+  icon(c, ICON_CENTRE_X, ICON_CENTRE_Y, mode_icon(mode));
+
+  // Centre text between the chevrons: their ink sits 3-4 px inside the icon cells, so it can use
+  // all the space between the cells.
+  const int centre_max_w = ICON_RIGHT_X - (ICON_LEFT_X + ic::W);
 
   switch (mode) {
     case Mode::COLOUR:
-    case Mode::EFFECT: {
+    case Mode::EFFECT:
       icon(c, ICON_LEFT_X, ICON_BOTTOM_Y, ic::chevronLeft);
       icon(c, ICON_RIGHT_X, ICON_BOTTOM_Y, ic::chevronRight);
-      icon(c, ICON_CENTRE_X, ICON_CENTRE_Y, mode_icon(mode));
-      bool colour = mode == Mode::COLOUR;
-      int n = colour ? light->colour_count() : light->effect_count();
-      int i = colour ? light->colour_index(0) : light->effect_index();
-      label(c, TEXT_CENTRE_X, CENTRE_TEXT_BASELINE, colour ? colour_label(*light, 0) : effect_label(*light),
-            Align::CENTRE, centre_max_w);
-      format_count(buf, sizeof(buf), i, n);
-      label(c, TEXT_CENTRE_X, CENTRE_TEXT2_BASELINE, buf, Align::CENTRE);
+      label(c, TEXT_CENTRE_X, CENTRE_TEXT_BASELINE,
+            mode == Mode::COLOUR ? colour_label(*light, 0) : effect_label(*light), Align::CENTRE, centre_max_w);
       break;
-    }
     case Mode::DUAL_COLOUR: {
-      // B2: colour 1 (bottom-left), B3: colour 2 (bottom-right), each with its name and position.
+      // B2: colour 1 (bottom-left), B3: colour 2 (bottom-right), each named above its button.
       // The names share one line: each gets half, or more if the other is short.
       const char *name0 = colour_label(*light, 0);
       const char *name1 = colour_label(*light, 1);
       const int line_w = TEXT_RIGHT_X - TEXT_LEFT_X - GAP;
       const int half_w = line_w / 2;
       int w0 = label_width(c, name0), w1 = label_width(c, name1);
-      int n = light->colour_count();
       icon(c, ICON_LEFT_X, ICON_BOTTOM_Y, ic::colour);
-      label(c, TEXT_LEFT_X, BOTTOM_LABEL2_BASELINE, name0, Align::LEFT, w1 < half_w ? line_w - w1 : half_w);
-      format_count(buf, sizeof(buf), light->colour_index(0), n);
-      label(c, TEXT_LEFT_X, BOTTOM_LABEL_BASELINE, buf, Align::LEFT);
+      label(c, TEXT_LEFT_X, BOTTOM_LABEL_BASELINE, name0, Align::LEFT, w1 < half_w ? line_w - w1 : half_w);
       icon(c, ICON_RIGHT_X, ICON_BOTTOM_Y, ic::colour);
-      label(c, TEXT_RIGHT_X, BOTTOM_LABEL2_BASELINE, name1, Align::RIGHT, w0 < half_w ? line_w - w0 : half_w);
-      format_count(buf, sizeof(buf), light->colour_index(1), n);
-      label(c, TEXT_RIGHT_X, BOTTOM_LABEL_BASELINE, buf, Align::RIGHT);
+      label(c, TEXT_RIGHT_X, BOTTOM_LABEL_BASELINE, name1, Align::RIGHT, w0 < half_w ? line_w - w0 : half_w);
       break;
     }
     case Mode::STATIC:
-      icon(c, ICON_CENTRE_X, ICON_CENTRE_Y, ic::unblocked);
       label(c, TEXT_CENTRE_X, CENTRE_TEXT_BASELINE, "STATIC", Align::CENTRE);
       break;
   }

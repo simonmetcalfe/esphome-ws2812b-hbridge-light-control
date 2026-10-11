@@ -23,8 +23,8 @@ namespace lcui {
  */
 
 enum class Font : uint8_t {
-  SMALL,  // labels: X11 5x7 (6 px capitals, 5 px advance)
-  LARGE,  // titles: X11 6x13B (9 px capitals, 6 px advance)
+  SMALL,  // labels: X11 helvR08 (8 px capitals, proportional)
+  LARGE,  // titles: X11 helvB10 (11 px capitals, proportional)
 };
 
 class Canvas {

@@ -18,15 +18,15 @@ external_components:
   - source: github://simonmetcalfe/oled-lcd-icons@main
     components: [oli_icons]
 
-# Public-domain X11 bitmap fonts, drawn at their native size (see fonts/README.md)
+# X11 Adobe Helvetica bitmap fonts, drawn at their native size (see fonts/README.md)
 font:
   - file:
       type: web
-      url: https://raw.githubusercontent.com/simonmetcalfe/esphome-ws2812b-hbridge-light-control/main/fonts/5x7.bdf
+      url: https://raw.githubusercontent.com/simonmetcalfe/esphome-ws2812b-hbridge-light-control/main/fonts/helvR08.bdf
     id: ui_font_small
   - file:
       type: web
-      url: https://raw.githubusercontent.com/simonmetcalfe/esphome-ws2812b-hbridge-light-control/main/fonts/6x13B.bdf
+      url: https://raw.githubusercontent.com/simonmetcalfe/esphome-ws2812b-hbridge-light-control/main/fonts/helvB10.bdf
     id: ui_font_large
 
 light_control_ui:

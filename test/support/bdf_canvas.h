@@ -62,8 +62,26 @@ class BdfFont {
 
   const Glyph &glyph(char c) const { return this->glyphs_[(uint8_t) c & 0x7F]; }
 
+  /** Sum of the glyph advances, as ESPHome and U8g2 measure. */
+  int width(const char *str) const {
+    int w = 0;
+    for (const char *p = str; *p != '\0'; p++) w += this->glyph(*p).advance;
+    return w;
+  }
+
  private:
   Glyph glyphs_[128];
+};
+
+/** The UI's two fonts: the files in ../fonts that ESPHome loads. */
+struct BdfFonts {
+  BdfFont small;
+  BdfFont large;
+
+  bool load() {
+    return this->small.load(LCUI_FONTS_DIR "/helvR08.bdf") && this->large.load(LCUI_FONTS_DIR "/helvB10.bdf");
+  }
+  const BdfFont &get(lcui::Font font) const { return font == lcui::Font::LARGE ? this->large : this->small; }
 };
 
 class BdfCanvas : public lcui::Canvas {
@@ -71,12 +89,12 @@ class BdfCanvas : public lcui::Canvas {
   static constexpr int W = 128;
   static constexpr int H = 64;
 
-  BdfCanvas(const BdfFont &small, const BdfFont &large) : small_(small), large_(large) {}
+  explicit BdfCanvas(const BdfFonts &fonts) : fonts_(fonts) {}
 
   void clear() { memset(this->frame_, 0, sizeof(this->frame_)); }
 
   void text(int x, int baseline, lcui::Font font, const char *str) override {
-    const BdfFont &f = font == lcui::Font::LARGE ? this->large_ : this->small_;
+    const BdfFont &f = this->fonts_.get(font);
     for (const char *p = str; *p != '\0'; p++) {
       const BdfFont::Glyph &g = f.glyph(*p);
       const int bytes = (g.w + 7) / 8;
@@ -90,12 +108,7 @@ class BdfCanvas : public lcui::Canvas {
     }
   }
 
-  int text_width(lcui::Font font, const char *str) override {
-    const BdfFont &f = font == lcui::Font::LARGE ? this->large_ : this->small_;
-    int w = 0;
-    for (const char *p = str; *p != '\0'; p++) w += f.glyph(*p).advance;
-    return w;
-  }
+  int text_width(lcui::Font font, const char *str) override { return this->fonts_.get(font).width(str); }
 
   void bitmap(int x, int y, const uint8_t *bmp, int w, int h) override {
     const int bytes = (w + 7) / 8;
@@ -130,8 +143,7 @@ class BdfCanvas : public lcui::Canvas {
     if (x >= 0 && x < W && y >= 0 && y < H) this->frame_[y][x] = on;
   }
 
-  const BdfFont &small_;
-  const BdfFont &large_;
+  const BdfFonts &fonts_;
   bool frame_[H][W]{};
 };
 

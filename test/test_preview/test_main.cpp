@@ -20,29 +20,28 @@ using lcui::Button;
 using lcui::FakeLight;
 
 const char *const FAIRY_EFFECTS[] = {"Fade", "Breathe", "Smooth Random", "Twinkle"};
-const char *const WALL_EFFECTS[] = {"Rainbow 360", "Rainbow Horizontal", "Aurora Blue", "Aurora Purple",
+const char *const WALL_EFFECTS[] = {"Rainbow 360", "Rainbow 180", "Aurora Blue", "Aurora Purple",
                                     "Aurora Multi", "Sunset", "Sunrise", "Lava", "Forest", "Candlelight"};
-const char *const WALL_COLOURS[] = {"Warm White", "Yellow", "Orange", "Red", "Pink", "Purple",
-                                    "Blue", "Cyan", "Aquamarine", "Green", "Cool White", "Neutral White"};
+const char *const WALL_COLOURS[] = {"Warm W.", "Yellow", "Orange", "Red", "Pink", "Purple",
+                                    "Blue", "Cyan", "Aqua", "Green", "Cool W.", "Neutral W."};
 
 constexpr int SCALE = 4;
 constexpr int SHEET_SCALE = 2;
 constexpr int SHEET_COLUMNS = 3;
 constexpr int SHEET_GAP = 8;
 
-BdfFont small_font;
-BdfFont large_font;
+BdfFonts fonts;
 
 struct Shot {
   std::string name;
-  BdfCanvas canvas{small_font, large_font};
+  BdfCanvas canvas{fonts};
 };
 std::vector<Shot *> shots;
 
 /** A fresh UI with the balcony lights, so each screen starts from the same state. */
 struct Scene {
-  FakeLight fairy{"Fairy lights", FAIRY_EFFECTS, 4};
-  FakeLight wall{"Wall lights", WALL_EFFECTS, 10, WALL_COLOURS, 12};
+  FakeLight fairy{"Fairy", FAIRY_EFFECTS, 4};
+  FakeLight wall{"Wall RGB", WALL_EFFECTS, 10, WALL_COLOURS, 12};
   lcui::Ui ui;
   uint32_t now = 1000;
 
@@ -86,8 +85,7 @@ void shoot(const char *name, Scene &scene) {
 }
 
 void test_load_fonts() {
-  TEST_ASSERT_TRUE(small_font.load(LCUI_FONTS_DIR "/5x7.bdf"));
-  TEST_ASSERT_TRUE(large_font.load(LCUI_FONTS_DIR "/6x13B.bdf"));
+  TEST_ASSERT_TRUE(fonts.load());
   mkdir(LCUI_PREVIEW_DIR, 0755);
 }
 
@@ -111,10 +109,10 @@ void test_home_screens() {
   dual.press(Button::TOP_LEFT, 2);
   shoot("home_wall_dual_colour", dual);
 
-  Scene longest;
-  longest.wall.set_effect(1);
-  longest.press(Button::TOP_LEFT, 2);
-  shoot("home_wall_long_effect", longest);
+  Scene off;
+  off.wall.set_on(false);
+  off.press(Button::TOP_LEFT, 2);
+  shoot("home_wall_off", off);
 }
 
 void test_brightness_screen() {
@@ -125,7 +123,7 @@ void test_brightness_screen() {
 
 void test_mode_screens() {
   Scene fairy_effect;
-  fairy_effect.fairy.set_effect(0);
+  fairy_effect.fairy.set_effect(2);  // Smooth Random, the longest name
   fairy_effect.press(Button::TOP_LEFT).press(Button::TOP_RIGHT);
   shoot("mode_fairy_effect", fairy_effect);
 
@@ -134,7 +132,7 @@ void test_mode_screens() {
   shoot("mode_fairy_static", fairy_static);
 
   Scene colour;
-  colour.wall.set_colour(0, 3);
+  colour.wall.set_colour(0, 0);
   colour.press(Button::TOP_LEFT, 2).press(Button::TOP_RIGHT);
   shoot("mode_wall_colour", colour);
 
@@ -145,7 +143,7 @@ void test_mode_screens() {
   shoot("mode_wall_dual_colour", dual);
 
   Scene effect;
-  effect.wall.set_effect(2);
+  effect.wall.set_effect(1);
   effect.press(Button::TOP_LEFT, 2).press(Button::TOP_RIGHT);
   shoot("mode_wall_effect", effect);
 }

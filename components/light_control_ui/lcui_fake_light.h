@@ -11,8 +11,9 @@ namespace lcui {
  * FAKE LIGHT
  *
  * A light whose state lives in RAM, for the UI test firmware and the host tests. It behaves like the
- * ESPHome ports: mode, effect and colour changes turn the light on, and EFFECT mode resumes the
- * last effect. Set FakeLight::log to print each change (e.g. to Serial in the UI test firmware).
+ * ESPHome ports: mode, effect, colour and brightness changes turn the light on (brightness 0 turns
+ * it off), and EFFECT mode resumes the last effect. Set FakeLight::log to print each change (e.g. to
+ * Serial in the UI test firmware).
  *
  * Pass colours to make a colour (WS2812B-style) light; without them it's an H-bridge-style light.
  * The name, effect and colour arrays must outlive the light.
@@ -45,7 +46,8 @@ class FakeLight : public LightPort {
 
   uint8_t brightness() const override { return this->brightness_; }
   void set_brightness(uint8_t percent) override {
-    this->brightness_ = percent > 100 ? 100 : percent;
+    this->on_ = percent > 0;
+    if (percent > 0) this->brightness_ = percent > 100 ? 100 : percent;
     this->changed_("brightness");
   }
 
