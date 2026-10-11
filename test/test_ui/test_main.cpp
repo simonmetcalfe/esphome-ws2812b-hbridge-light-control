@@ -77,7 +77,7 @@ void test_load_fonts() { TEST_ASSERT_TRUE(fonts.load()); }
 
 void test_home_starts_on_all_lights() {
   auto c = render();
-  TEST_ASSERT_TRUE(c.has_text("ALL LIGHTS"));
+  TEST_ASSERT_TRUE(c.has_text("All lights"));
   TEST_ASSERT_TRUE(c.has_text("ON"));
   TEST_ASSERT_TRUE(c.has_text("60%"));
   TEST_ASSERT_TRUE(c.has_bitmap(ic::swapL));
@@ -93,7 +93,7 @@ void test_b1_cycles_lights_and_wraps() {
   press(Button::TOP_LEFT);
   TEST_ASSERT_TRUE(render().has_text("Wall RGB"));
   press(Button::TOP_LEFT);
-  TEST_ASSERT_TRUE(render().has_text("ALL LIGHTS"));
+  TEST_ASSERT_TRUE(render().has_text("All lights"));
 }
 
 void test_single_light_has_no_all_lights_entry() {
@@ -204,13 +204,13 @@ void test_no_positions_shown() {
 
 void test_brightness_all_lights_starts_from_brightest_and_syncs() {
   fairy->set_brightness(30);
-  wall->set_brightness(75);
-  TEST_ASSERT_TRUE(render().has_text("75%"));
+  wall->set_brightness(73);
+  TEST_ASSERT_TRUE(render().has_text("73%"));
   press(Button::BOTTOM_RIGHT);
   TEST_ASSERT_EQUAL(Screen::BRIGHTNESS, ui->screen());
   press(Button::BOTTOM_RIGHT);  // up
-  TEST_ASSERT_EQUAL(80, fairy->brightness());
-  TEST_ASSERT_EQUAL(80, wall->brightness());
+  TEST_ASSERT_EQUAL(75, fairy->brightness());
+  TEST_ASSERT_EQUAL(75, wall->brightness());
   press(Button::BOTTOM_LEFT);  // down
   TEST_ASSERT_EQUAL(70, fairy->brightness());
   TEST_ASSERT_EQUAL(70, wall->brightness());
@@ -221,7 +221,7 @@ void test_brightness_steps_and_limits() {
   press(Button::BOTTOM_RIGHT);
   fairy->set_brightness(63);
   press(Button::BOTTOM_RIGHT);
-  TEST_ASSERT_EQUAL(70, fairy->brightness());
+  TEST_ASSERT_EQUAL(65, fairy->brightness());
   fairy->set_brightness(63);
   press(Button::BOTTOM_LEFT);
   TEST_ASSERT_EQUAL(60, fairy->brightness());
@@ -235,39 +235,51 @@ void test_brightness_steps_and_limits() {
 void test_brightness_down_to_zero_turns_off() {
   press(Button::TOP_LEFT);  // Fairy
   press(Button::BOTTOM_RIGHT);
-  fairy->set_brightness(10);
+  fairy->set_brightness(5);
   press(Button::BOTTOM_LEFT);
   TEST_ASSERT_FALSE(fairy->is_on());
-  TEST_ASSERT_EQUAL(10, fairy->brightness());  // kept for the next turn-on
+  TEST_ASSERT_EQUAL(5, fairy->brightness());  // kept for the next turn-on
   TEST_ASSERT_TRUE(wall->is_on());
   TEST_ASSERT_EQUAL(0, (int) render().fill_widths.size());  // empty bar
   press(Button::BOTTOM_LEFT);
   TEST_ASSERT_FALSE(fairy->is_on());
   press(Button::BOTTOM_RIGHT);  // up from 0 turns it on
   TEST_ASSERT_TRUE(fairy->is_on());
-  TEST_ASSERT_EQUAL(10, fairy->brightness());
-  fairy->set_brightness(5);  // below the first step (set elsewhere): down turns it off
+  TEST_ASSERT_EQUAL(5, fairy->brightness());
+  fairy->set_brightness(3);  // below the first step (set elsewhere): down turns it off
   press(Button::BOTTOM_LEFT);
   TEST_ASSERT_FALSE(fairy->is_on());
 }
 
 void test_brightness_all_lights_changes_only_lights_that_are_on() {
   fairy->set_on(false);
-  wall->set_brightness(40);
-  TEST_ASSERT_TRUE(render().has_text("40%"));  // Fairy's 60 % doesn't count while it's off
+  wall->set_brightness(20);
+  TEST_ASSERT_TRUE(render().has_text("20%"));  // Fairy's 60 % doesn't count while it's off
   press(Button::BOTTOM_RIGHT);
   press(Button::BOTTOM_RIGHT);  // up
-  TEST_ASSERT_EQUAL(50, wall->brightness());
+  TEST_ASSERT_EQUAL(25, wall->brightness());
   TEST_ASSERT_FALSE(fairy->is_on());
   TEST_ASSERT_EQUAL(60, fairy->brightness());
-  for (int i = 0; i < 5; i++) press(Button::BOTTOM_LEFT);  // 40, 30, 20, 10, 0
+  for (int i = 0; i < 5; i++) press(Button::BOTTOM_LEFT);  // 20, 15, 10, 5, 0
   TEST_ASSERT_FALSE(wall->is_on());
   TEST_ASSERT_FALSE(fairy->is_on());
   press(Button::BOTTOM_RIGHT);  // none on: up turns them all on
   TEST_ASSERT_TRUE(fairy->is_on());
   TEST_ASSERT_TRUE(wall->is_on());
-  TEST_ASSERT_EQUAL(10, fairy->brightness());
-  TEST_ASSERT_EQUAL(10, wall->brightness());
+  TEST_ASSERT_EQUAL(5, fairy->brightness());
+  TEST_ASSERT_EQUAL(5, wall->brightness());
+}
+
+void test_brightness_has_20_steps() {
+  press(Button::TOP_LEFT);  // Fairy
+  press(Button::BOTTOM_RIGHT);
+  fairy->set_on(false);
+  for (int step = 1; step <= 20; step++) {
+    press(Button::BOTTOM_RIGHT);
+    TEST_ASSERT_EQUAL(step * 5, fairy->brightness());
+  }
+  press(Button::BOTTOM_RIGHT);
+  TEST_ASSERT_EQUAL(100, fairy->brightness());
 }
 
 void test_brightness_bar_fill() {
@@ -283,17 +295,17 @@ void test_brightness_hold_repeats() {
   press(Button::TOP_LEFT);  // Fairy
   press(Button::BOTTOM_RIGHT);
   uint32_t t = now;
-  ui->press(Button::BOTTOM_RIGHT, t);  // 60 -> 70
-  TEST_ASSERT_EQUAL(70, fairy->brightness());
+  ui->press(Button::BOTTOM_RIGHT, t);  // 60 -> 65
+  TEST_ASSERT_EQUAL(65, fairy->brightness());
   TEST_ASSERT_FALSE(ui->tick(t + 499));
-  TEST_ASSERT_TRUE(ui->tick(t + 500));  // -> 80
-  TEST_ASSERT_EQUAL(80, fairy->brightness());
+  TEST_ASSERT_TRUE(ui->tick(t + 500));  // -> 70
+  TEST_ASSERT_EQUAL(70, fairy->brightness());
   TEST_ASSERT_FALSE(ui->tick(t + 600));
-  TEST_ASSERT_TRUE(ui->tick(t + 650));  // -> 90
-  TEST_ASSERT_EQUAL(90, fairy->brightness());
+  TEST_ASSERT_TRUE(ui->tick(t + 650));  // -> 75
+  TEST_ASSERT_EQUAL(75, fairy->brightness());
   ui->release(Button::BOTTOM_RIGHT, t + 700);
   TEST_ASSERT_FALSE(ui->tick(t + 2000));
-  TEST_ASSERT_EQUAL(90, fairy->brightness());
+  TEST_ASSERT_EQUAL(75, fairy->brightness());
 }
 
 void test_brightness_b1_returns_home() {
@@ -466,6 +478,7 @@ int main(int argc, char **argv) {
   RUN_TEST(test_brightness_steps_and_limits);
   RUN_TEST(test_brightness_down_to_zero_turns_off);
   RUN_TEST(test_brightness_all_lights_changes_only_lights_that_are_on);
+  RUN_TEST(test_brightness_has_20_steps);
   RUN_TEST(test_brightness_bar_fill);
   RUN_TEST(test_brightness_hold_repeats);
   RUN_TEST(test_brightness_b1_returns_home);

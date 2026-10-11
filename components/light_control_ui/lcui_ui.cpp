@@ -48,13 +48,13 @@ constexpr int BAR_Y = 51;
 constexpr int BAR_W = 94;
 constexpr int BAR_H = 11;
 
-constexpr uint8_t BRIGHTNESS_STEP = 10;
+constexpr uint8_t BRIGHTNESS_STEP = 5;  // 20 steps
 constexpr uint32_t REPEAT_DELAY_MS = 500;
 constexpr uint32_t REPEAT_INTERVAL_MS = 150;
 
 constexpr size_t TEXT_MAX = 32;
 
-const char *const ALL_LIGHTS = "ALL LIGHTS";
+const char *const ALL_LIGHTS = "All lights";
 
 enum class Align : uint8_t { LEFT, CENTRE, RIGHT };
 

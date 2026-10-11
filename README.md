@@ -16,12 +16,12 @@ Each button's icon and label are drawn next to it and change per screen.
 | Screen | B1 (top-left) | B2 (bottom-left) | B3 (bottom-right) | B4 (top-right) |
 |---|---|---|---|---|
 | Home | Next light (All lights, then each light) | On / off | Brightness screen (while on) | Mode screen (single lights, while on) |
-| Brightness | Back | Down 10 %, to 0 = off (hold to repeat) | Up 10 % (hold to repeat) | – |
+| Brightness | Back | Down 5 %, to 0 = off (hold to repeat) | Up 5 % (hold to repeat) | – |
 | Mode | Back | Previous colour / effect, or next colour 1 | Next colour / effect, or next colour 2 | Next mode |
 
 - **Modes:** WS2812B lights cycle 1 COLOUR → 2 COLOUR → EFFECTS. H-bridge lights cycle STATIC → EFFECTS. The home screen shows the mode by B4; the mode screen shows the colour or effect.
 - **Off:** while the light (or every light, on All lights) is off, B3 and B4 are hidden and do nothing.
-- **Brightness:** stepping down to 0 turns the light off, keeping its last brightness for the next turn-on. Up from 0 turns it on at 10 %.
+- **Brightness:** stepping down to 0 turns the light off, keeping its last brightness for the next turn-on. Up from 0 turns it on at 5 %. 20 steps from 5 % to 100 %.
 - **All lights:**
   - On/off shows ON if any light is on. A press turns them all off, or all on if all are off.
   - Brightness starts from the brightest light that's on, and the first press sets every light that's on to the same value. Lights that are off stay off, unless all of them are (stepped down to 0): then up turns them all on.
@@ -131,7 +131,7 @@ pio test -e native -f test_preview   # redraws docs/preview/*.png from the BDF f
 ## Not done yet
 
 - **AUTO** (ON / AUTO / OFF) is left out for now; B2 toggles on/off.
-- **Colours from the colour wheel aren't detected.** A colour picked on Home Assistant's colour wheel doesn't change the Preset select, so the OLED keeps showing the last preset. The UI can show CUSTOM, but the ESPHome port doesn't detect it yet.
+- **Colours from the colour wheel aren't detected.** A colour picked on Home Assistant's colour wheel doesn't change the Preset select, so the OLED keeps showing the last preset. The UI can show CUSTOM, but the ESPHome port doesn't detect it yet. The Preset selects are what's remembered across reboots, so after a reboot the strip goes back to the last preset.
 - **Choosing 1 COLOUR while the strip is off** turns it on in its previous mode, so the first B4 press appears to do nothing. `capture_strip_control` resumes the stored mode when a plain turn-on arrives, as it does for Home Assistant. B4 is now disabled while the light is off, so this only happens if the strip is turned off elsewhere while the mode screen is open.
 - **The screen stays on.** There's no screen timeout or burn-in protection.
 - **Two WS2812B outputs** need `balconylights.yaml` reworked first: its strip state (globals, scripts, Preset selects) exists once, for one strip.
