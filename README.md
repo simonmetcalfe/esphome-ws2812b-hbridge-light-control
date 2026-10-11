@@ -57,6 +57,8 @@ tick(ms)  ─► │        ▲ reads every frame, writes on press              
 | `src/main.cpp` | UI test firmware |
 | `test/` | Host tests (`test_ui`) and preview generator (`test_preview`) |
 | `examples/balconylights_ui.yaml` | What to add to `balconylights.yaml` |
+| `balconylights2.yaml` | The full balcony config, with the UI and the H-bridge effects package |
+| `packages/hbridge_effects.yaml` | ESPHome package: the H-bridge lights' effects |
 | `fonts/` | The two BDF fonts ESPHome loads |
 | `docs/preview/` | Generated screen previews |
 
@@ -88,6 +90,23 @@ light_control_ui:
 The component becomes the display's writer, so the display needs no `lambda:`. It redraws after each button press and on the display's `update_interval`, so changes made in Home Assistant show within that interval.
 
 **To match the hardware**, list each output's light with the type its jumpers select. Up to four lights are supported.
+
+**H-bridge effects** (Fade, Breathe, Smooth Random, Twinkle) come from [packages/hbridge_effects.yaml](packages/hbridge_effects.yaml), a remote package that adds them to a cwww light the device YAML already defines. List it once per H-bridge light:
+
+```yaml
+packages:
+  fairy_lights_effects:
+    url: https://github.com/simonmetcalfe/esphome-ws2812b-hbridge-light-control
+    ref: main
+    files:
+      - path: packages/hbridge_effects.yaml
+        vars:
+          light_id: light1
+```
+
+ESPHome re-fetches GitHub sources once a day by default, so a push can take up to a day to reach a compile. Set `refresh: 0s` on the `external_components` and `packages` entries while iterating.
+
+[balconylights2.yaml](balconylights2.yaml) is the full balcony config with all of this in place.
 
 ## UI test firmware
 

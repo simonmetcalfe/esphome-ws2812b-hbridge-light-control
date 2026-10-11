@@ -1,0 +1,245 @@
+# Effects for an H-bridge driven 2-wire LED string
+#
+# The string is a cwww light whose cold and warm channels are its two LED
+# directions (see balconylights2.yaml). This package adds the effects to a
+# light the device YAML already defines, so the light, its pins and outputs
+# stay there:
+#
+#   packages:
+#     fairy_lights_effects:
+#       url: https://github.com/simonmetcalfe/esphome-ws2812b-hbridge-light-control
+#       ref: main
+#       files:
+#         - path: packages/hbridge_effects.yaml
+#           vars:
+#             light_id: light1
+#
+# List the file once per H-bridge light, each with its own light_id.
+#
+# vars:
+#   light_id   the cwww light's id
+
+light:
+  - id: !extend ${light_id}
+    effects:
+      - lambda:
+          name: "Fade"
+          update_interval: 10s
+          lambda: |-
+            // A100 -> AB0 -> B100 -> AB0, 10 s per step, reaches true 0 and 100
+            static int state = 0;
+            static uint32_t last_run = 0;
+            if (millis() - last_run > 20000) state = 0;
+            last_run = millis();
+
+            auto call = id(${light_id}).turn_on();
+            call.set_publish(false);
+            call.set_save(false);
+            call.set_transition_length(10000);
+
+            switch (state) {
+              case 0: call.set_cold_white(1.0); call.set_warm_white(0.0); break;
+              case 1: call.set_cold_white(0.0); call.set_warm_white(0.0); break;
+              case 2: call.set_cold_white(0.0); call.set_warm_white(1.0); break;
+              case 3: call.set_cold_white(0.0); call.set_warm_white(0.0); break;
+            }
+
+            call.perform();
+            state = (state + 1) % 4;
+
+      - lambda:
+          name: "Breathe"
+          update_interval: 5s
+          lambda: |-
+            // Same cycle as Fade but faster and floors at 10% instead of 0
+            static int state = 0;
+            static uint32_t last_run = 0;
+            if (millis() - last_run > 20000) state = 0;
+            last_run = millis();
+
+            auto call = id(${light_id}).turn_on();
+            call.set_publish(false);
+            call.set_save(false);
+            call.set_transition_length(5000);
+
+            switch (state) {
+              case 0: call.set_cold_white(1.0); call.set_warm_white(0.1); break;  // A100 B10
+              case 1: call.set_cold_white(0.1); call.set_warm_white(0.1); break;  // AB10
+              case 2: call.set_cold_white(0.1); call.set_warm_white(1.0); break;  // B100 A10
+              case 3: call.set_cold_white(0.1); call.set_warm_white(0.1); break;  // AB10
+            }
+
+            call.perform();
+            state = (state + 1) % 4;
+
+      - lambda:
+          name: "Smooth Random"
+          update_interval: 500ms
+          lambda: |-
+            // Random walk over lit states only (no AB0 — full off is Fade's job)
+            // random 3-8 s transitions
+            static const float STATES[7][2] = {
+              // {A (cold), B (warm)}
+              {1.0, 1.0},  // AB 100
+              {1.0, 0.0},  // A100 B0
+              {0.0, 1.0},  // B100 A0
+              {1.0, 0.1},  // A100 B10
+              {0.1, 1.0},  // B100 A10
+              {0.1, 0.1},  // AB10
+              {0.0, 0.0},  // AB0
+            };
+            static const int NUM_STATES = 7;
+            static int current = -1;
+            static uint32_t next_change = 0;
+            static uint32_t last_run = 0;
+            if (millis() - last_run > 5000) { current = -1; next_change = 0; }
+            last_run = millis();
+            if (millis() < next_change) return;
+
+            int next;
+            do {
+              next = random_uint32() % NUM_STATES;
+            } while (next == current);
+            current = next;
+
+            uint32_t transition = 1000 + (random_uint32() % 5000);
+            next_change = millis() + transition;
+
+            auto call = id(${light_id}).turn_on();
+            call.set_publish(false);
+            call.set_save(false);
+            call.set_transition_length(transition);
+            call.set_cold_white(STATES[current][0]);
+            call.set_warm_white(STATES[current][1]);
+            call.perform();
+
+      - lambda:
+          name: "Twinkle"
+          update_interval: 50ms
+          lambda: |-
+            // A100/B20 <-> B100/A20: 10 s dwell, 3 twinkles, then sequential
+            // handoff (one channel at a time) to avoid the brief dim before crossfade
+            static int phase = 0;  // 0:fade A 1:dwell 2:B burst 3:B-up 8:A-down 4:dwell 5:A burst 9:A-up 10:B-down
+            static int flash_step = 0;
+            static int twinkle_count = 0;
+            static uint32_t next_action = 0;
+            static uint32_t last_run = 0;
+            static const uint32_t FADE_MS = 1000;
+            static const uint32_t TWINKLE_FLASH_MS = 50;
+            static const uint32_t TWINKLE_FLASH_GAP_MS = 50;
+            static const uint32_t TWINKLE_REST_MS = 10000;
+            static const uint32_t SETTLE_MS = 150;
+            static const uint32_t RESTART_GUARD_MS = 60000;
+
+            if (millis() - last_run > RESTART_GUARD_MS) {
+              phase = 0; flash_step = 0; twinkle_count = 0; next_action = 0;
+            }
+            last_run = millis();
+            if (millis() < next_action) return;
+
+            const int FLASHES = 3;
+            switch (phase) {
+              case 1:  // dwell at A100/B20 before B burst
+              case 4:  // dwell at B100/A20 before A burst
+                next_action = millis() + TWINKLE_REST_MS;
+                phase = (phase == 1) ? 2 : 5;
+                flash_step = 0;
+                twinkle_count = 0;
+                return;
+              default:
+                break;
+            }
+
+            auto call = id(${light_id}).make_call();
+            call.set_state(true);
+            call.set_publish(false);
+            call.set_save(false);
+
+            switch (phase) {
+              case 0:  // fade to A dominant (both channels — effect entry only)
+                call.set_transition_length(FADE_MS);
+                call.set_cold_white(1.0);
+                call.set_warm_white(0.2);
+                next_action = millis() + FADE_MS + 50;
+                phase = 1;
+                flash_step = 0;
+                break;
+              case 2:  // B twinkle burst while A stays at 100
+                if (flash_step % 2 == 0) {
+                  call.set_transition_length(TWINKLE_FLASH_MS);
+                  call.set_cold_white(1.0);
+                  call.set_warm_white(1.0);
+                  next_action = millis() + TWINKLE_FLASH_MS + 20;
+                } else {
+                  call.set_cold_white(1.0);
+                  call.set_warm_white(0.2);
+                  twinkle_count++;
+                  if (twinkle_count >= FLASHES) {
+                    call.set_transition_length(0);
+                    phase = 3;
+                    flash_step = 0;
+                    twinkle_count = 0;
+                    next_action = millis() + SETTLE_MS;
+                  } else {
+                    call.set_transition_length(TWINKLE_FLASH_MS);
+                    next_action = millis() + TWINKLE_FLASH_MS + TWINKLE_FLASH_GAP_MS;
+                  }
+                }
+                flash_step++;
+                break;
+              case 3:  // handoff: B up (A stays full) — avoids simultaneous crossfade dip
+                call.set_transition_length(FADE_MS);
+                call.set_cold_white(1.0);
+                call.set_warm_white(1.0);
+                next_action = millis() + FADE_MS + 50;
+                phase = 8;
+                break;
+              case 8:  // handoff: A down (B stays full)
+                call.set_transition_length(FADE_MS);
+                call.set_cold_white(0.2);
+                call.set_warm_white(1.0);
+                next_action = millis() + FADE_MS + 50;
+                phase = 4;
+                flash_step = 0;
+                break;
+              case 5:  // A twinkle burst while B stays at 100
+                if (flash_step % 2 == 0) {
+                  call.set_transition_length(TWINKLE_FLASH_MS);
+                  call.set_warm_white(1.0);
+                  call.set_cold_white(1.0);
+                  next_action = millis() + TWINKLE_FLASH_MS + 20;
+                } else {
+                  call.set_warm_white(1.0);
+                  call.set_cold_white(0.2);
+                  twinkle_count++;
+                  if (twinkle_count >= FLASHES) {
+                    call.set_transition_length(0);
+                    phase = 9;
+                    flash_step = 0;
+                    twinkle_count = 0;
+                    next_action = millis() + SETTLE_MS;
+                  } else {
+                    call.set_transition_length(TWINKLE_FLASH_MS);
+                    next_action = millis() + TWINKLE_FLASH_MS + TWINKLE_FLASH_GAP_MS;
+                  }
+                }
+                flash_step++;
+                break;
+              case 9:  // handoff: A up (B stays full)
+                call.set_transition_length(FADE_MS);
+                call.set_cold_white(1.0);
+                call.set_warm_white(1.0);
+                next_action = millis() + FADE_MS + 50;
+                phase = 10;
+                break;
+              case 10:  // handoff: B down (A stays full)
+                call.set_transition_length(FADE_MS);
+                call.set_cold_white(1.0);
+                call.set_warm_white(0.2);
+                next_action = millis() + FADE_MS + 50;
+                phase = 1;
+                flash_step = 0;
+                break;
+            }
+
+            call.perform();
