@@ -10,9 +10,9 @@ namespace lcui {
  * -------------------------------------------------------------------------------------------------
  * FAKE LIGHT
  *
- * A light whose state lives in RAM, for the bench firmware and the host tests. It behaves like the
+ * A light whose state lives in RAM, for the UI test firmware and the host tests. It behaves like the
  * ESPHome ports: mode, effect and colour changes turn the light on, and EFFECT mode resumes the
- * last effect. Set FakeLight::log to print each change (e.g. to Serial on the bench).
+ * last effect. Set FakeLight::log to print each change (e.g. to Serial in the UI test firmware).
  *
  * Pass colours to make a colour (WS2812B-style) light; without them it's an H-bridge-style light.
  * The name, effect and colour arrays must outlive the light.

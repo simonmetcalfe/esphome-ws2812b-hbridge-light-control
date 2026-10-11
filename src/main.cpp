@@ -1,6 +1,6 @@
 /**
  * -------------------------------------------------------------------------------------------------
- * BENCH FIRMWARE
+ * UI TEST FIRMWARE
  *
  * The light control UI on the real OLED and buttons, with fake lights in RAM (no Wi-Fi, no ESPHome),
  * for quick UI iteration. The lights mirror balconylights.yaml: Fairy lights (H-bridge, 4 effects)
@@ -128,7 +128,7 @@ void setup() {
   ui.add_light(&fairy_lights);
   ui.add_light(&wall_lights);
   draw();
-  Serial.println("Light control UI bench ready");
+  Serial.println("Light control UI test firmware ready");
 }
 
 void loop() {

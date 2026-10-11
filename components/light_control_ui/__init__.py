@@ -1,6 +1,6 @@
 """ESPHome external component for the light control OLED menu.
 
-The UI itself is plain C++ (lcui_*.cpp/h, shared with the PlatformIO bench build). This component
+The UI itself is plain C++ (lcui_*.cpp/h, shared with the PlatformIO UI test build). This component
 wires it to ESPHome: the display (the component becomes its writer, so no display lambda is
 needed), two fonts, the four corner buttons, and the lights it controls.
 """

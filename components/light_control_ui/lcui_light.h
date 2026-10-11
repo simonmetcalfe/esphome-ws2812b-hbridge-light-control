@@ -19,7 +19,7 @@ namespace lcui {
  *
  * Implementations:
  *   - ESPHome:  HBridgePort / StripPort on a light::LightState (light_control_ui.h)
- *   - Bench and tests:  FakeLight, state held in RAM (lcui_fake_light.h)
+ *   - UI test firmware and host tests:  FakeLight, state held in RAM (lcui_fake_light.h)
  * -------------------------------------------------------------------------------------------------
  */
 

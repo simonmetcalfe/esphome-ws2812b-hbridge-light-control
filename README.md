@@ -5,7 +5,7 @@ A 2-output light controller with OLED screen for controlling WS2812B and 2-wire 
 This repo holds the controller's OLED menu: a 128x64 SH1106/SSD1306 screen with four buttons, one at each corner. The same C++ code runs in two builds:
 
 - **ESPHome**, as an external component, controlling the real lights alongside Home Assistant.
-- **A bench firmware** (PlatformIO, no Wi-Fi) with fake lights, for fast UI iteration on the device. It builds in about 15 s and flashes over USB.
+- **A UI test firmware** (PlatformIO, no Wi-Fi) with fake lights, for fast UI iteration on the device. It builds in about 15 s and flashes over USB.
 
 ![Every screen, rendered from the real fonts](docs/preview/all.png)
 
@@ -33,7 +33,7 @@ press()   ─► │  screens + state machine ──► render(Canvas&)         
 tick(ms)  ─► │        ▲ reads every frame, writes on press                 │
              │   LightPort[]   ("All lights" is built by the UI)           │
              └──────┬────────────────────────────────┬────────────────────┘
-       ESPHome component                    Bench firmware / host tests
+       ESPHome component                    UI test firmware / host tests
        • buttons: binary_sensor callbacks   • buttons: GPIO polling / test calls
        • Canvas: DisplayCanvas on `it`      • Canvas: U8g2 / BDF → PNG
        • LightPort: HBridgePort, StripPort  • LightPort: FakeLight in RAM
@@ -51,8 +51,8 @@ tick(ms)  ─► │        ▲ reads every frame, writes on press              
 | `components/light_control_ui/lcui_*` | The UI: plain C++, shared by every build |
 | `components/light_control_ui/light_control_ui.*`, `__init__.py` | ESPHome adapter and config schema |
 | `library.json` | Makes the UI a PlatformIO library (core files only) |
-| `platformio.ini` | PlatformIO project (repo root): the `bench` and `native` environments |
-| `src/main.cpp` | Bench firmware |
+| `platformio.ini` | PlatformIO project (repo root): the `ui-test` and `native` environments |
+| `src/main.cpp` | UI test firmware |
 | `test/` | Host tests (`test_ui`) and preview generator (`test_preview`) |
 | `examples/balconylights_ui.yaml` | What to add to `balconylights.yaml` |
 | `fonts/` | The two BDF fonts ESPHome loads |
@@ -87,13 +87,13 @@ The component becomes the display's writer, so the display needs no `lambda:`. I
 
 **To match the hardware**, list each output's light with the type its jumpers select. Up to four lights are supported.
 
-## Bench firmware
+## UI test firmware
 
 Built for the Seeed XIAO ESP32S3, with the pins in `balconylights.yaml`: I2C on GPIO5/6 (D4/D5), buttons on GPIO43, 44, 7 and 8 (D6, D7, D8, D9). The lights are fakes that mirror the balcony (Fairy lights: 4 effects; Wall lights: 10 effects, 12 colours), and every change is printed to the USB serial port.
 
 ```sh
-pio run -e bench -t upload    # flash over USB
-pio device monitor -e bench
+pio run -e ui-test -t upload    # flash over USB
+pio device monitor -e ui-test
 ```
 
 GPIO43/44 are UART0's pins, used here as buttons B1/B2, so serial output goes over USB only.
