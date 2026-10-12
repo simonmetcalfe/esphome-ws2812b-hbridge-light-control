@@ -12,7 +12,9 @@ namespace lcui {
  * LIGHT CONTROL UI
  *
  * The OLED menu for up to MAX_LIGHTS lights on a 128x64 screen with four buttons, one at each
- * corner. Each button's icon and label are drawn next to it, and change per screen.
+ * corner. Each button's icon is drawn next to it, and changes per screen. B1's label is the title
+ * beside it, B2 and B3 are labelled above their icons, and B4 is never labelled, so the title has
+ * the top row to itself.
  *
  *   B1 top-left      select / back
  *   B2 bottom-left
@@ -23,10 +25,10 @@ namespace lcui {
  *   HOME        B1 next light (All lights first when there are 2+ lights), B2 on/off,
  *               B3 brightness screen, B4 mode screen (single lights only). B3 and B4 are hidden
  *               and do nothing while the light (or every light) is off
- *   BRIGHTNESS  B1 back, B2 down, B3 up (hold to repeat), in 5 % steps; 0 turns the light off.
- *               All lights start from the brightest light that's on, and the lights that are on
- *               are all set to the same value on the first change
- *   MODE        B1 back, B4 next mode, B2/B3 depend on the mode:
+ *   BRIGHTNESS  Titled "Brightness". B1 back, B2 down, B3 up (hold to repeat), in 5 % steps; 0
+ *               turns the light off. All lights start from the brightest light that's on, and the
+ *               lights that are on are all set to the same value on the first change
+ *   MODE        Titled with the current mode. B1 back, B4 next mode, B2/B3 depend on the mode:
  *                 COLOUR       previous / next colour
  *                 DUAL_COLOUR  next colour 1 / next colour 2
  *                 EFFECT       previous / next effect

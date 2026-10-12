@@ -11,7 +11,7 @@ This repo holds the controller's OLED menu: a 128x64 SH1106/SSD1306 screen with 
 
 ## Screens
 
-Each button's icon and label are drawn next to it and change per screen.
+Each button's icon is drawn next to it and changes per screen. B1's label is the title, B2 and B3 are labelled above their icons, and B4 has no label, so the title has the top row to itself.
 
 | Screen | B1 (top-left) | B2 (bottom-left) | B3 (bottom-right) | B4 (top-right) |
 |---|---|---|---|---|
@@ -19,7 +19,7 @@ Each button's icon and label are drawn next to it and change per screen.
 | Brightness | Back | Down 5 %, to 0 = off (hold to repeat) | Up 5 % (hold to repeat) | – |
 | Mode | Back | Previous colour / effect, or next colour 1 | Next colour / effect, or next colour 2 | Next mode |
 
-- **Modes:** WS2812B lights cycle 1 COLOUR → 2 COLOUR → EFFECTS. H-bridge lights cycle STATIC → EFFECTS. The home screen shows the mode by B4; the mode screen shows the colour or effect.
+- **Modes:** WS2812B lights cycle 1 COLOUR → 2 COLOUR → EFFECTS. H-bridge lights cycle STATIC → EFFECTS. The home screen shows the mode's icon by B4; the mode screen names the mode in its title, with the colour or effect below.
 - **Off:** while the light (or every light, on All lights) is off, B3 and B4 are hidden and do nothing.
 - **Brightness:** stepping down to 0 turns the light off, keeping its last brightness for the next turn-on. Up from 0 turns it on at 5 %. 20 steps from 5 % to 100 %.
 - **All lights:**

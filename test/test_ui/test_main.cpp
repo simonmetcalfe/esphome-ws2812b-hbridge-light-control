@@ -28,7 +28,7 @@ const char *const WALL_COLOURS[] = {"Warm W.", "Yellow", "Orange", "Red", "Pink"
 
 // Icon positions (lcui_ui.cpp)
 constexpr int B4_ICON_X = 115, B4_ICON_Y = 1;
-constexpr int CENTRE_ICON_X = 58, CENTRE_ICON_Y = 26;
+constexpr int CENTRE_ICON_X = 58, CENTRE_ICON_Y = 22;
 
 BdfFonts fonts;
 FakeLight *fairy;
@@ -160,30 +160,28 @@ void test_all_lights_off_hides_and_disables_b3() {
   TEST_ASSERT_EQUAL(Screen::HOME, ui->screen());
 }
 
-void test_home_b4_shows_mode_only() {
+/** B4 is the mode icon alone: the title, ON and the brightness are the only text. */
+void test_home_b4_shows_mode_icon_only() {
   select_wall();
   auto c = render();
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::colour, B4_ICON_X, B4_ICON_Y));
-  TEST_ASSERT_TRUE(c.has_text("1 COLOUR"));
-  TEST_ASSERT_FALSE(c.has_text("WARM W."));
+  TEST_ASSERT_EQUAL(3, (int) c.texts.size());
 
   wall->set_colour(1, 3);  // colour 2 -> two-colour mode
   c = render();
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::contrast, B4_ICON_X, B4_ICON_Y));
-  TEST_ASSERT_TRUE(c.has_text("2 COLOUR"));
-  TEST_ASSERT_FALSE(c.has_text("RED"));
+  TEST_ASSERT_EQUAL(3, (int) c.texts.size());
 
   wall->set_effect(2);
   c = render();
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::pattern, B4_ICON_X, B4_ICON_Y));
-  TEST_ASSERT_TRUE(c.has_text("EFFECTS"));
-  TEST_ASSERT_FALSE(c.has_text("AURORA BLUE"));
+  TEST_ASSERT_EQUAL(3, (int) c.texts.size());
 
   press(Button::TOP_LEFT);  // All lights
   press(Button::TOP_LEFT);  // Fairy (STATIC)
   c = render();
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::unblocked, B4_ICON_X, B4_ICON_Y));
-  TEST_ASSERT_TRUE(c.has_text("STATIC"));
+  TEST_ASSERT_EQUAL(3, (int) c.texts.size());
 }
 
 /** No "3 / 12"-style positions on any screen. */
@@ -312,6 +310,10 @@ void test_brightness_b1_returns_home() {
   press(Button::BOTTOM_RIGHT);
   auto c = render();
   TEST_ASSERT_TRUE(c.has_bitmap(ic::arrowLeftLarge));
+  TEST_ASSERT_TRUE(c.has_text("Brightness"));
+  TEST_ASSERT_FALSE(c.has_text("All lights"));
+  TEST_ASSERT_TRUE(c.has_bitmap_at(ic::brightness, CENTRE_ICON_X, CENTRE_ICON_Y));
+  TEST_ASSERT_EQUAL(1, (int) c.texts.size());  // no percentage
   press(Button::TOP_LEFT);
   TEST_ASSERT_EQUAL(Screen::HOME, ui->screen());
   TEST_ASSERT_EQUAL(0, ui->selected());  // still All lights
@@ -335,19 +337,24 @@ void test_mode_cycle_colour_light() {
   press(Button::TOP_RIGHT);
   TEST_ASSERT_EQUAL(Screen::MODE, ui->screen());
   auto c = render();
-  TEST_ASSERT_TRUE(c.has_text("1 COLOUR"));
+  TEST_ASSERT_TRUE(c.has_text("1 Colour"));
+  TEST_ASSERT_FALSE(c.has_text("1 COLOUR"));
+  TEST_ASSERT_FALSE(c.has_text("Wall RGB"));
+  TEST_ASSERT_FALSE(c.has_text("MODE"));
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::swapL, B4_ICON_X, B4_ICON_Y));
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::colour, CENTRE_ICON_X, CENTRE_ICON_Y));
   press(Button::TOP_RIGHT);
   TEST_ASSERT_EQUAL(Mode::DUAL_COLOUR, wall->mode());
   c = render();
-  TEST_ASSERT_TRUE(c.has_text("2 COLOUR"));
+  TEST_ASSERT_TRUE(c.has_text("2 Colour"));
+  TEST_ASSERT_FALSE(c.has_text("MODE"));
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::swapL, B4_ICON_X, B4_ICON_Y));
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::contrast, CENTRE_ICON_X, CENTRE_ICON_Y));
   press(Button::TOP_RIGHT);
   TEST_ASSERT_EQUAL(Mode::EFFECT, wall->mode());
   c = render();
-  TEST_ASSERT_TRUE(c.has_text("EFFECTS"));
+  TEST_ASSERT_TRUE(c.has_text("Effects"));
+  TEST_ASSERT_FALSE(c.has_text("MODE"));
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::swapL, B4_ICON_X, B4_ICON_Y));
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::pattern, CENTRE_ICON_X, CENTRE_ICON_Y));
   press(Button::TOP_RIGHT);
@@ -358,14 +365,15 @@ void test_mode_cycle_hbridge_light() {
   press(Button::TOP_LEFT);  // Fairy
   press(Button::TOP_RIGHT);
   auto c = render();
-  TEST_ASSERT_TRUE(c.has_text("STATIC"));
+  TEST_ASSERT_TRUE(c.has_text("Static"));
+  TEST_ASSERT_EQUAL(1, (int) c.texts.size());  // the title only: no STATIC label, no B4 label
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::unblocked, CENTRE_ICON_X, CENTRE_ICON_Y));
   TEST_ASSERT_TRUE(c.has_bitmap_at(ic::swapL, B4_ICON_X, B4_ICON_Y));
   TEST_ASSERT_FALSE(press(Button::BOTTOM_RIGHT));  // STATIC: B2/B3 unused
   press(Button::TOP_RIGHT);
   TEST_ASSERT_EQUAL(Mode::EFFECT, fairy->mode());
   c = render();
-  TEST_ASSERT_TRUE(c.has_text("EFFECTS"));
+  TEST_ASSERT_TRUE(c.has_text("Effects"));
   TEST_ASSERT_TRUE(c.has_text("FADE"));
   press(Button::TOP_RIGHT);
   TEST_ASSERT_EQUAL(Mode::STATIC, fairy->mode());
@@ -472,7 +480,7 @@ int main(int argc, char **argv) {
   RUN_TEST(test_b4_unused_on_all_lights);
   RUN_TEST(test_light_off_hides_and_disables_b3_b4);
   RUN_TEST(test_all_lights_off_hides_and_disables_b3);
-  RUN_TEST(test_home_b4_shows_mode_only);
+  RUN_TEST(test_home_b4_shows_mode_icon_only);
   RUN_TEST(test_no_positions_shown);
   RUN_TEST(test_brightness_all_lights_starts_from_brightest_and_syncs);
   RUN_TEST(test_brightness_steps_and_limits);
