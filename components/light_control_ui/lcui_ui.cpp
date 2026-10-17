@@ -27,15 +27,14 @@ constexpr int ICON_RIGHT_X = 115;   // columns 115-125
 constexpr int ICON_CENTRE_X = 58;   // columns 58-68
 constexpr int ICON_TOP_Y = 1;       // rows 1-11
 constexpr int ICON_BOTTOM_Y = 51;   // rows 51-61
-constexpr int ICON_CENTRE_Y = 26;   // rows 26-36
+constexpr int ICON_CENTRE_Y = 22;   // rows 22-32: 7 px below the title's descenders, 7 px above the bottom labels
 
 constexpr int TEXT_LEFT_X = 2;
 constexpr int TEXT_RIGHT_X = 127;   // right-aligned text ends on column 125
 constexpr int TEXT_CENTRE_X = 64;
 constexpr int TITLE_X = 17;         // 4 px after the B1 icon
 
-constexpr int TITLE_BASELINE = 12;         // LARGE capitals on rows 1-11, level with the B1 icon
-constexpr int SUBTITLE_BASELINE = 23;      // SMALL capitals on rows 15-22, under the B4 icon
+constexpr int TITLE_BASELINE = 12;         // LARGE capitals on rows 1-11, level with the B1 icon; descenders to row 14
 constexpr int BOTTOM_LABEL_BASELINE = 48;  // SMALL capitals on rows 40-47, above the bottom icons
 constexpr int CENTRE_TEXT_BASELINE = 60;   // rows 52-59, level with the chevrons
 
@@ -118,17 +117,18 @@ const uint8_t *mode_icon(Mode mode) {
   }
 }
 
-const char *mode_label(Mode mode) {
+/** The mode screen's title. */
+const char *mode_name(Mode mode) {
   switch (mode) {
     case Mode::COLOUR:
-      return "1 COLOUR";
+      return "1 Colour";
     case Mode::DUAL_COLOUR:
-      return "2 COLOUR";
+      return "2 Colour";
     case Mode::EFFECT:
-      return "EFFECTS";
+      return "Effects";
     case Mode::STATIC:
     default:
-      return "STATIC";
+      return "Static";
   }
 }
 
@@ -396,19 +396,16 @@ void Ui::render_home(Canvas &c) const {
   snprintf(buf, sizeof(buf), "%d%%", this->brightness());
   label(c, TEXT_RIGHT_X, BOTTOM_LABEL_BASELINE, buf, Align::RIGHT);
 
-  // B4: mode (single lights only); the mode screen shows the colour or effect
+  // B4: mode icon (single lights only), unlabelled so the title has the top row to itself; the mode
+  // screen names the mode
   if (light == nullptr) return;
-  Mode mode = light->mode();
-  icon(c, ICON_RIGHT_X, ICON_TOP_Y, mode_icon(mode));
-  label(c, TEXT_RIGHT_X, SUBTITLE_BASELINE, mode_label(mode), Align::RIGHT);
+  icon(c, ICON_RIGHT_X, ICON_TOP_Y, mode_icon(light->mode()));
 }
 
 void Ui::render_brightness(Canvas &c) const {
-  LightPort *light = this->selected_light();
-
   // B1: back
   icon(c, ICON_LEFT_X, ICON_TOP_Y, ic::arrowLeftLarge);
-  title(c, light != nullptr ? light->name() : ALL_LIGHTS);
+  title(c, "Brightness");
 
   icon(c, ICON_CENTRE_X, ICON_CENTRE_Y, ic::brightness);
 
@@ -424,14 +421,13 @@ void Ui::render_mode(Canvas &c) const {
   LightPort *light = this->selected_light();
   if (light == nullptr) return;
 
-  // B1: back
-  icon(c, ICON_LEFT_X, ICON_TOP_Y, ic::arrowLeftLarge);
-  title(c, light->name());
-
-  // B4: next mode
+  // B1: back, titled with the current mode
   Mode mode = light->mode();
+  icon(c, ICON_LEFT_X, ICON_TOP_Y, ic::arrowLeftLarge);
+  title(c, mode_name(mode));
+
+  // B4: next mode (unlabelled)
   icon(c, ICON_RIGHT_X, ICON_TOP_Y, ic::swapL);
-  label(c, TEXT_RIGHT_X, SUBTITLE_BASELINE, mode_label(mode), Align::RIGHT);
 
   icon(c, ICON_CENTRE_X, ICON_CENTRE_Y, mode_icon(mode));
 
@@ -462,8 +458,7 @@ void Ui::render_mode(Canvas &c) const {
       break;
     }
     case Mode::STATIC:
-      label(c, TEXT_CENTRE_X, CENTRE_TEXT_BASELINE, "STATIC", Align::CENTRE);
-      break;
+      break;  // Nothing to adjust; the title names the mode
   }
 }
 
